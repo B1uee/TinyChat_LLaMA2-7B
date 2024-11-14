@@ -42,4 +42,3 @@ Please check this document and follow the instructions which will walk you throu
 [llama.cpp](https://github.com/ggerganov/llama.cpp)
 
 [transformers](https://github.com/huggingface/transformers)
-# TinyChat_LLaMA2-7B
