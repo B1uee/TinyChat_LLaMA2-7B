@@ -31,9 +31,9 @@ void MatmulOperator::mat_mul_loop_unrolling(struct matmul_params *params) {
                 // pointer of the int4 weights    
                 // col对B来说是行，相当于取了B的列的4个值 与A(row,ch)的值计算得到C(row,col~col+3)的四个值的1/k
                 // 循环完一遍后即可直接得到C的四个值，实现循环展开 
-                // 为了最大化SIMD指令集的效率，读满了w，而A为了对齐就不得不多读一倍
+                // 为了最大化SIMD指令集的效率，读满了w，而A为了对齐就不得不多读一倍。
                 uint8_t *w0_int4 = &B->int4_data_ptr[(col * k + ch) / 2];    // 长度为32B的数组，存有64个B_Element
-                uint8_t *w1_int4 = &B->int4_data_ptr[((col + 1) * k + ch) / 2];
+                uint8_t *w1_int4 = &B->int4_data_ptr[((col + 1) * k + ch) / 2];  // 用uint8_存int4，索引/2
                 uint8_t *w2_int4 = &B->int4_data_ptr[((col + 2) * k + ch) / 2];
                 uint8_t *w3_int4 = &B->int4_data_ptr[((col + 3) * k + ch) / 2];
                 // scale of activation

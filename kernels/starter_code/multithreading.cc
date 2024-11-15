@@ -8,7 +8,7 @@
 #include "../matmul.h"
 #include "common.h"
 struct multithreading_thread_args {
-    int start, end;
+    int start, end;  // 线程工作范围
     const struct matmul_params* params;
 };
 static void* multithreading_worker_func(void* args) {
@@ -110,7 +110,25 @@ void MatmulOperator::mat_mul_multithreading(struct matmul_params* params) {
     struct multithreading_thread_args threads_args[num_thread];
 
     // TODO: Thread creation
+    int cols_per_thread = n / num_thread;  //定义每个thread负责的C的列范围，即B的行范围
+    for(int i = 0; i < num_thread; i++){
+        threads_args[i].start = i * cols_per_thread;
+        threads_args[i].end = (i + 1) * cols_per_thread;
+        threads_args[i].params = params;
+        pthread_create(&thread_pool[i], nullptr, multithreading_worker_func, &threads_args[i]);
+        // int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+        // const pthread_attr_t *attr：这是一个指向线程属性对象的指针，用于指定新线程的属性,
+        // 如果设置为 NULL/nullptr，则使用默认属性创建线程,
+        // 默认属性定义了线程的一些基本行为和资源需求，例如栈的大小、调度策略、继承属性等。
+    }
 
     // TODO: Join threads
+    for(int i = 0; i < num_thread; i++) pthread_join(thread_pool[i], nullptr);
+    // int pthread_join(pthread_t thread, void **retval);
+    // void **retval：用于存储线程的返回值，设为nullptr代表不需要返回值
+
+    // 注意：pthread_create()中需要传入指向pthread_t类型变量的指针，故传入地址；
+    // pthread_join()则需要直接传入pthread_t类型的变量
+
 };
 }  // namespace matmul

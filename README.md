@@ -6,7 +6,11 @@ My solution of lab5 for [efficientml.ai course](https://efficientml.ai/).
 
 The implementations needed to be completed in this lab include:
 1. Loop Unrolling ✔
-2. Multithreading
+![loop_unrolling](figs/loop_unrolling.png)
+
+2. Multithreading ✔
+![multithreading](figs/multithreading.png)
+
 3. SIMD Programming
 4. Multithreading with Loop Unrolling
 5. Combination of All Techniques
