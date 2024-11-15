@@ -1,6 +1,6 @@
 # TinyChat: Optimizing LLM on Edge Devices
 
-My solution of lab5 for [efficientml.ai course](https://efficientml.ai/).
+My solution with code comments of lab5 for [efficientml.ai course](https://efficientml.ai/).
 
 [Tutorial document](https://docs.google.com/document/d/13IaTfPKjp0KiSBEhPdX9IxgXMIAZfiFjor37OWQJhMM/edit?usp=sharing) is here.
 
