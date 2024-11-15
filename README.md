@@ -11,7 +11,9 @@ The implementations needed to be completed in this lab include:
 2. Multithreading ✔
 ![multithreading](figs/multithreading.png)
 
-3. SIMD Programming
+3. SIMD Programming ✔
+![simd_programming](figs/simd_programming.png)
+
 4. Multithreading with Loop Unrolling
 5. Combination of All Techniques
 

@@ -86,28 +86,28 @@ void MatmulOperator::mat_mul_simd_programming(struct matmul_params *params) {
 #ifdef QM_x86
             // order of weights with QM_x86:
             // origin order: (w0,w1), (w2,w3), (w4,w5), (w6,w7), (w8, w9), ... (w62,w63)
-            // QM_ARM order: (w0,w32),(w1,w33),(w2,w34),(w3,w35),(w4, w36),... (w31,w63)
+            // QM_x86 order: (w0,w32),(w1,w33),(w2,w34),(w3,w35),(w4, w36),... (w31,w63)
             //               |--|
             //               4 bits
             //               |------|
             //               8 bits (byte)
             //            low|----------------------------------------------------------|high
             //               0                         256 bit
-            __m256 acc0 = _mm256_setzero_ps();
+            __m256 acc0 = _mm256_setzero_ps(); //  AVX 指令，生成零向量
             // pointer of the int4 weights
             const __m256i *w_start = (__m256i *)&B->int4_data_ptr[col * k / 2];
             // pointer of the int8 activation
             const __m256i *a_start = (__m256i *)&A->int8_data_ptr[row * k];
             // scale of weight
-            float *s_ptr = &params->scales[col * k / 32];
+            float *s_ptr = &params->scales[col * k / block_size];
             // scale of activation
-            float *sa_ptr = &params->A_scales[row * k / 32];
+            float *sa_ptr = &params->A_scales[row * k / block_size];
 
             const int num_block = k / block_size;
             // Compute two blocks in each iteration
             for (int q = 0; q < num_block; q += 2) {
                 // lowbit mask
-                const __m256i lowMask = _mm256_set1_epi8(0xF);
+                const __m256i lowMask = _mm256_set1_epi8(0xF); // 创建一个 256 位的向量，其中每个字节都被设置为0xF
 
                 /*
                    We will accelerate the program using x86 Intrinsics. You can check the documentation of operations
@@ -117,14 +117,24 @@ void MatmulOperator::mat_mul_simd_programming(struct matmul_params *params) {
                 // (1) load 256 bit from w_strat with _mm256_loadu_si256
                 // (2) use `_mm256_and_si256` and lowMask to extract the lower half of wegihts
                 // (3) use `_mm256_srli_epi16` and `_mm256_and_si256` with lowMask to extract the upper half of weights
-                __m256i raw_w = _mm256_loadu_si256(w_start);
+                __m256i raw_w = _mm256_loadu_si256(w_start);  // si: Scalar Integer，整数
+                __m256i low_w = _mm256_and_si256(raw_w, lowMask);   // a&b
+                // srli: Shift Right Logical Immediate，对向量中每个16位整数执行逻辑右移操作
+                __m256i high_w = _mm256_and_si256(_mm256_srli_epi16(raw_w, 4), lowMask);  
+                
 
                 // TODO: apply zero_point to weights and convert the range from (0, 15) to (-8, 7)
                 // Hint: using `_mm256_sub_epi8` to the lower-half and upper-half vectors of weights
                 // Note: Store the lower half and upper half of weights into `w_0` and `w_128`, respectively
                 const __m256i zero_point = _mm256_set1_epi8(8);
                 __m256i w_0, w_128;
+                w_0 = _mm256_sub_epi8(low_w, zero_point);  // 向量a中的每8位整数减去向量b对应位置的8位整数
+                w_128 = _mm256_sub_epi8(high_w, zero_point);
 
+
+                // 每对应的8位相乘，扩展出16位，相邻的16位再相加，返回16bit*16，
+                //即x_vec与w_vec逐元素相乘后，又让相邻的中间结果求和，目标是一个值。
+                // 注意：s1只接受无符号数
                 // Perform int8 dot product with _mm256_maddubs_epi16
                 /* Syntax of _mm256_maddubs_epi16:
                    __m256i _mm256_maddubs_epi16(__m256i s1, __m256i s2): Multiplies vertically each unsigned byte of
@@ -139,29 +149,34 @@ void MatmulOperator::mat_mul_simd_programming(struct matmul_params *params) {
                 // and upper halves sum in `dot` and `dot2`
                 __m256i dot, dot2;
                 // Get absolute values of x vectors
-                const __m256i ax = _mm256_sign_epi8(w_0, w_0);
+                const __m256i ax = _mm256_sign_epi8(w_0, w_0); //若b>0，a不变；b<0，a取反 -> 求绝对值
                 const __m256i ax2 = _mm256_sign_epi8(w_128, w_128);
                 // Load activation
-                __m256i activation = a_start[0];
+                __m256i activation = a_start[0]; 
                 __m256i activation2 = a_start[1];
                 // Sign the values of the y vectors
                 const __m256i sy = _mm256_sign_epi8(activation, w_0);
                 const __m256i sy2 = _mm256_sign_epi8(activation2, w_128);
+                // 改变上述操作中activation和weight的位置也可行，即让求绝对值后的activation作为s1，
+                // 让改变对应富豪的weight作为s2
 
                 // TODO: Perform int8 dot product with `_mm256_maddubs_epi16`
                 // Hint: use `_mm256_maddubs_epi16` to complete the following computation
                 // dot = ax * sy
                 // dot2 = ax2 * sy2
+                dot = _mm256_maddubs_epi16(ax, sy);
+                dot2 = _mm256_maddubs_epi16(ax2, sy2);   // 16bit * 16
+
 
                 // Convert int32 vectors to floating point vectors
                 const __m256i ones = _mm256_set1_epi16(1);
-                const __m256i summed_pairs = _mm256_madd_epi16(ones, dot);
+                const __m256i summed_pairs = _mm256_madd_epi16(ones, dot);  // 将相邻的16bit整数对累加起来，返回32bit*8，此时已是int
                 const __m256i summed_pairs2 = _mm256_madd_epi16(ones, dot2);
-                __m256 intermediate = _mm256_cvtepi32_ps(summed_pairs);
+                __m256 intermediate = _mm256_cvtepi32_ps(summed_pairs); // 将32bit int转换为float
                 __m256 intermediate2 = _mm256_cvtepi32_ps(summed_pairs2);
 
                 // Create vectors for scales and apply them to intermediate results
-                __m256 v_s = _mm256_set1_ps(s_ptr[0] * sa_ptr[0]);
+                __m256 v_s = _mm256_set1_ps(s_ptr[0] * sa_ptr[0]);  // 生成值为s_ptr[0] * sa_ptr[0]的8个float
                 __m256 v_s2 = _mm256_set1_ps(s_ptr[1] * sa_ptr[1]);
                 acc0 = _mm256_fmadd_ps(intermediate, v_s, acc0);
                 acc0 = _mm256_fmadd_ps(intermediate2, v_s2, acc0);
@@ -170,8 +185,11 @@ void MatmulOperator::mat_mul_simd_programming(struct matmul_params *params) {
                 w_start += 1;
                 a_start += 2;
             }
-            float *ptr = (float *)&acc0;
+            float *ptr = (float *)&acc0;  // 256转
             C->data_ptr[row * n + col] = ptr[0] + ptr[1] + ptr[2] + ptr[3] + ptr[4] + ptr[5] + ptr[6] + ptr[7];
+            // 每次循环通过2个block计算了w和x对应位置的64个元素乘积之和，将结果从8bit逐渐累加后，
+            // 经历了8bit->16bit->int->float，最后分摊在了总长为256bit的acc0的8个float上，
+            // 等循环结束完成最终的累加，求得C[row, col]
 #endif
         }
     }
