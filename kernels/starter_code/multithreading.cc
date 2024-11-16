@@ -110,7 +110,7 @@ void MatmulOperator::mat_mul_multithreading(struct matmul_params* params) {
     struct multithreading_thread_args threads_args[num_thread];
 
     // TODO: Thread creation
-    int cols_per_thread = n / num_thread;  //定义每个thread负责的C的列范围，即B的行范围
+    const int cols_per_thread = n / num_thread;  //定义每个thread负责的C的列范围，即B的行范围
     for(int i = 0; i < num_thread; i++){
         threads_args[i].start = i * cols_per_thread;
         threads_args[i].end = (i + 1) * cols_per_thread;

@@ -1,25 +1,17 @@
 # TinyChat: Optimizing LLM on Edge Devices
 
-My solution with code comments of lab5 for [efficientml.ai course](https://efficientml.ai/).
+My solution with code comments of lab5 for [MIT-6.5940 efficientml.ai course](https://efficientml.ai/).
 
-[Tutorial document](https://docs.google.com/document/d/13IaTfPKjp0KiSBEhPdX9IxgXMIAZfiFjor37OWQJhMM/edit?usp=sharing) is here.
+Here is [tutorial document](https://docs.google.com/document/d/13IaTfPKjp0KiSBEhPdX9IxgXMIAZfiFjor37OWQJhMM/edit?usp=sharing).
 
 The implementations needed to be completed in this lab include:
 1. Loop Unrolling ✔
-
-![loop_unrolling](figs/loop_unrolling.png)
-
 2. Multithreading ✔
-
-![multithreading](figs/multithreading.png)
-
 3. SIMD Programming ✔
+4. Multithreading with Loop Unrolling ✔
+5. Combination of All Techniques ✔
 
-![simd_programming](figs/simd_programming.png)
-
-4. Multithreading with Loop Unrolling
-5. Combination of All Techniques
-
+![results](figs/results.png)
 ## Related Projects
 
 [TinyChatEngine](https://github.com/mit-han-lab/TinyChatEngine).

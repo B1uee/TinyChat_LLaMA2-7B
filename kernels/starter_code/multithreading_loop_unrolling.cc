@@ -90,8 +90,34 @@ static void *multithreading_loop_unrolling_worker_func(void *args) {
                     intermediate_sum3_2nd = 0;
                 for (int qj = 0; qj < 32; qj++) {
                     // TODO: decode a packed byte into two int8 in the range of (-8, 7)
+                    uint8_t packed_w_col_0 = w0_int4[qj];   // 虽然做了&操作并转为int，但符号位会默认在第一位，这里用的4bit，还是需要手动-8
+                    signed char w_low_0 = (packed_w_col_0 & 0x0F) - 8;  
+                    signed char w_high_0 = (packed_w_col_0 >> 4) - 8;  // 右移左边自动赋全0
+
+                    uint8_t packed_w_col_1 = w1_int4[qj];  
+                    signed char w_low_1 = (packed_w_col_1 & 0x0F) - 8;  
+                    signed char w_high_1 = (packed_w_col_1 >> 4) - 8; 
+
+                    uint8_t packed_w_col_2 = w2_int4[qj];  
+                    signed char w_low_2 = (packed_w_col_2 & 0x0F) - 8;  
+                    signed char w_high_2 = (packed_w_col_2 >> 4) - 8; 
+
+                    uint8_t packed_w_col_3 = w3_int4[qj];  
+                    signed char w_low_3 = (packed_w_col_3 & 0x0F) - 8;  
+                    signed char w_high_3 = (packed_w_col_3 >> 4) - 8; 
 
                     // TODO: int8 multiply and accumulate operation
+                    intermediate_sum0 += w_low_0 *  a_int8[qj];
+                    intermediate_sum0_2nd += w_high_0 *  a_int8[qj + 32];
+
+                    intermediate_sum1 += w_low_1 *  a_int8[qj];
+                    intermediate_sum1_2nd += w_high_1 *  a_int8[qj + 32];
+
+                    intermediate_sum2 += w_low_2 *  a_int8[qj];
+                    intermediate_sum2_2nd += w_high_2 *  a_int8[qj + 32];
+
+                    intermediate_sum3 += w_low_3 *  a_int8[qj];
+                    intermediate_sum3_2nd += w_high_3 *  a_int8[qj + 32];
                 }
                 // dequantize the sum into floating point
                 acc0 += (float)intermediate_sum0 * s_a * s_w0;
@@ -131,7 +157,14 @@ void MatmulOperator::mat_mul_multithreading_loop_unrolling(struct matmul_params 
     assert(params->block_size == 32);  // support block size 32 for now
 
     // TODO: Thread creation
-
+    const int cols_per_thread = n / num_thread;
+    for(int i = 0; i < num_thread; i++){
+        threads_args[i].start = i * cols_per_thread;
+        threads_args[i].end = (i + 1) * cols_per_thread;
+        threads_args[i].params = params;
+        pthread_create(&thread_pool[i], nullptr, multithreading_loop_unrolling_worker_func, &threads_args[i]);
+    }
     // TODO: Join threads
+    for(int i = 0; i < num_thread; i++) pthread_join(thread_pool[i], nullptr);
 };
 }  // namespace matmul
