@@ -11,7 +11,10 @@ The implementations needed to be completed in this lab include:
 4. Multithreading with Loop Unrolling ✔
 5. Combination of All Techniques ✔
 
+## Results
+
 ![results](figs/results.png)
+
 ## Related Projects
 
 [TinyChatEngine](https://github.com/mit-han-lab/TinyChatEngine).
@@ -27,3 +30,5 @@ The implementations needed to be completed in this lab include:
 [llama.cpp](https://github.com/ggerganov/llama.cpp)
 
 [transformers](https://github.com/huggingface/transformers)
+
+[LLaMA2-7B-on-laptop by yifanlu](https://github.com/yifanlu0227/LLaMA2-7B-on-laptop/tree/aaf7bf3e7f9667d4c6170b2c3ffff39b31c089e3)
