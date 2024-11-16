@@ -12,8 +12,23 @@ The implementations needed to be completed in this lab include:
 5. Combination of All Techniques ✔
 
 ## Results
+```transformer/tests/test_linear.cc: const int m = 1, n = 32000, k = 4096;```
 
-![results](figs/results.png)
+- num_thread = 8
+
+![results_8](figs/results_8.png)
+
+- num_thread = 16
+
+![results_16](figs/results_16.png)
+
+- num_thread = 32
+
+![results_32](figs/results_32.png)
+
+- num_thread = 64
+
+![results_64](figs/results_64.png)
 
 ## Related Projects
 
