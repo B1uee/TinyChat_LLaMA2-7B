@@ -30,6 +30,15 @@ The implementations needed to be completed in this lab include:
 
 ![results_64](figs/results_64.png)
 
+Additionally, the inference latency is higher with 128 threads than with 64 threads. This might be because my CPU has 96 cores, each with 2 threads via hyper-threading. Simply increasing the number of threads may not necessarily reduce inference latency.
+- num_thread = 64
+
+![chat_64](figs/chat_64.png)
+
+- num_thread = 128
+
+![chat_128](figs/chat_128.png)
+
 ## Related Projects
 
 [TinyChatEngine](https://github.com/mit-han-lab/TinyChatEngine).
